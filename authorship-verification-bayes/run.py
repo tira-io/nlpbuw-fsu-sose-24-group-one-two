@@ -3,9 +3,11 @@ from pathlib import Path
 from joblib import load
 from tira.rest_api_client import Client
 from tira.third_party_integrations import get_output_directory
-
+import re
 if __name__ == "__main__":
-
+    def preprocessingText(text):
+        text = re.sub(r'[^\w\s]', '', text)
+        return text.lower()
     # Load the data
     tira = Client()
     df = tira.pd.inputs(
@@ -14,9 +16,11 @@ if __name__ == "__main__":
 
     # Load the model and make predictions
     model = load(Path(__file__).parent / "model.joblib")
-    predictions = model.predict(df["text"])
+    predictions = model.predict(df["text"].apply(preprocessingText))
+    #print(predictions)
     df["generated"] = predictions
     df = df[["id", "generated"]]
+    print(df)
 
     # Save the predictions
     output_directory = get_output_directory(str(Path(__file__).parent))
