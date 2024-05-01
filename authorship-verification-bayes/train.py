@@ -10,7 +10,7 @@ import re
 if __name__ == "__main__":
     def preprocessingText(text):
         text = re.sub(r'[^\w\s]', '', text)
-        return text.lower()
+        return text
     
     # Load the data
     tira = Client()
