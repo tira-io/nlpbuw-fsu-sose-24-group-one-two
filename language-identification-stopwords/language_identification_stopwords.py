@@ -29,19 +29,18 @@ def predict_language(text, stopwords):
 if __name__ == "__main__":
     tira = Client()
 
-    # Load data
+    # Load validation data
     text_validation = tira.pd.inputs("nlpbuw-fsu-sose-24", "language-identification-validation-20240429-training")
     targets_validation = tira.pd.truths("nlpbuw-fsu-sose-24", "language-identification-validation-20240429-training")
-    df = text_validation.join(targets_validation.set_index("id"), lsuffix='_text', rsuffix='_target')
 
     # Load stopwords
     stopwords = load_stopwords()
 
     # Predict languages
     predictions = []
-    for index, row in tqdm(df.iterrows(), total=len(df)):
-        lang = predict_language(row['text'], stopwords)
-        predictions.append({'id': row['id'], 'lang': lang})
+    for id, text in tqdm(zip(text_validation['id'], targets_validation['lang']), total=len(text_validation)):
+        lang = predict_language(text, stopwords)
+        predictions.append({'id': id, 'lang': lang})
 
     # Save predictions
     output_directory = get_output_directory(str(Path(__file__).parent))
