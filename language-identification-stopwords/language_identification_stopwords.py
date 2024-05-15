@@ -32,7 +32,7 @@ if __name__ == "__main__":
     # Load data
     text_validation = tira.pd.inputs("nlpbuw-fsu-sose-24", "language-identification-validation-20240429-training")
     targets_validation = tira.pd.truths("nlpbuw-fsu-sose-24", "language-identification-validation-20240429-training")
-    df = text_validation.join(targets_validation.set_index("id"))
+    df = text_validation.join(targets_validation.set_index("id"), lsuffix='_text', rsuffix='_target')
 
     # Load stopwords
     stopwords = load_stopwords()
