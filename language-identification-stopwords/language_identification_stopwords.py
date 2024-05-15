@@ -21,15 +21,11 @@ from nltk.stem import PorterStemmer, WordNetLemmatizer
 if __name__ == "__main__":
 
     tira = Client()
-
-    # loading validation data (automatically replaced by test data when run on tira)
-    text_validation = tira.pd.inputs(
-        "nlpbuw-fsu-sose-24", "language-identification-validation-20240429-training"
-    )
-    targets_validation = tira.pd.truths(
-        "nlpbuw-fsu-sose-24", "language-identification-validation-20240429-training"
-    )
-    merged_data = pd.merge(text_validation, targets_validation, on='id')
+    text_train = tira.pd.inputs("nlpbuw-fsu-sose-24", "language-identification-train-20240429-training")
+    targets_train = tira.pd.truths("nlpbuw-fsu-sose-24", "language-identification-train-20240429-training")
+    text_train = text_train.set_index("id")
+    merged_data = text_train.join(targets_train.set_index("id"))
+    print(merged_data)
     lang_ids = [
         "af",
         "az",
