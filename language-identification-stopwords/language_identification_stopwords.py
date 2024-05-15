@@ -1,80 +1,48 @@
 from pathlib import Path
-import re
-
-from tqdm import tqdm
 import pandas as pd
 from tira.rest_api_client import Client
 from tira.third_party_integrations import get_output_directory
+from tqdm import tqdm
+
+# Load stopwords for each language
+def load_stopwords():
+    stopwords = {}
+    lang_ids = [
+        "af", "az", "bg", "cs", "da", "de", "el", "en", "es", "fi",
+        "fr", "hr", "it", "ko", "nl", "no", "pl", "ru", "ur", "zh"
+    ]
+    for lang_id in lang_ids:
+        stopwords[lang_id] = set(
+            (Path(__file__).parent / "stopwords" / f"stopwords-{lang_id}.txt").read_text().splitlines()
+        )
+    return stopwords
+
+# Predict language based on stopwords
+def predict_language(text, stopwords):
+    lang_scores = {lang: 0 for lang in stopwords}
+    for lang, lang_stopwords in stopwords.items():
+        for word in text.split():
+            if word.lower() in lang_stopwords:
+                lang_scores[lang] += 1
+    return max(lang_scores, key=lang_scores.get)
 
 if __name__ == "__main__":
-
     tira = Client()
 
-    # loading validation data (automatically replaced by test data when run on tira)
-    text_validation = tira.pd.inputs(
-        "nlpbuw-fsu-sose-24", "language-identification-validation-20240429-training"
-    )
-    targets_validation = tira.pd.truths(
-        "nlpbuw-fsu-sose-24", "language-identification-validation-20240429-training"
-    )
+    # Load data
+    text_validation = tira.pd.inputs("nlpbuw-fsu-sose-24", "language-identification-validation-20240429-training")
+    targets_validation = tira.pd.truths("nlpbuw-fsu-sose-24", "language-identification-validation-20240429-training")
+    df = text_validation.join(targets_validation.set_index("id"))
 
-    lang_ids = [
-        "af",
-        "az",
-        "bg",
-        "cs",
-        "da",
-        "de",
-        "el",
-        "en",
-        "es",
-        "fi",
-        "fr",
-        "hr",
-        "it",
-        "ko",
-        "nl",
-        "no",
-        "pl",
-        "ru",
-        "ur",
-        "zh",
-    ]
+    # Load stopwords
+    stopwords = load_stopwords()
 
-    stopwords = {
-        lang_id: set(
-            (Path(__file__).parent / "stopwords" / f"stopwords-{lang_id}.txt")
-            .read_text()
-            .splitlines()
-        )
-        - set(("(", ")", "*", "|", "+", "?"))  # remove regex special characters
-        for lang_id in lang_ids
-    }
+    # Predict languages
+    predictions = []
+    for index, row in tqdm(df.iterrows(), total=len(df)):
+        lang = predict_language(row['text'], stopwords)
+        predictions.append({'id': row['id'], 'lang': lang})
 
-    # classifying the data
-    stopword_fractions = []
-    for lang_id in tqdm(lang_ids):
-        lang_stopwords = stopwords[lang_id]
-        counts = pd.Series(0, index=text_validation.index, name=lang_id)
-        for stopword in lang_stopwords:
-            counts += (
-                text_validation["text"]
-                .str.contains(stopword, regex=False, case=False)
-                .astype(int)
-            )
-        stopword_fractions.append(counts / len(lang_stopwords))
-    stopword_fractions = pd.concat(stopword_fractions, axis=1)
-
-    prediction = stopword_fractions.idxmax(axis=1)
-
-    # converting the prediction to the required format
-    prediction.name = "lang"
-    prediction = prediction.to_frame()
-    prediction["id"] = text_validation["id"]
-    prediction = prediction[["id", "lang"]]
-
-    # saving the prediction
+    # Save predictions
     output_directory = get_output_directory(str(Path(__file__).parent))
-    prediction.to_json(
-        Path(output_directory) / "predictions.jsonl", orient="records", lines=True
-    )
+    pd.DataFrame(predictions).to_json(Path(output_directory) / "predictions.jsonl", orient="records", lines=True)

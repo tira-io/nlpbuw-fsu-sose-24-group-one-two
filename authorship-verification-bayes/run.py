@@ -13,7 +13,7 @@ if __name__ == "__main__":
     def Suffix_Removal(word):
         if word.endswith("ing"):
             return word[:-3]
-        else:
+        else:#comment
             return word
 
     def Normalize(word):
