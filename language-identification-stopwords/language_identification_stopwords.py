@@ -71,7 +71,7 @@ if __name__ == "__main__":
         input_txt = [word for word in input_txt if word not in stopwords]
         input_txt = ' '.join(input_txt)
         return input_txt
-    merged_data['text']=merged_data['text'].apply(First_process)
+    merged_data["text"]=merged_data["text"].apply(First_process)
     TFV = TfidfVectorizer(max_features=9990)
     X = TFV.fit_transform(merged_data["text"])
     encod = LabelEncoder()
