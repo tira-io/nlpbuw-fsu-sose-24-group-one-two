@@ -4,4 +4,4 @@ ADD runit.py /code/runit.py
 ADD stopwords /code/stopwords
 ADD model.joblib /code/model.joblib
 
-ENTRYPOINT [ "python3", "/code/language_identification_stopwords.py" ]
+ENTRYPOINT [ "python3", "/code/runit.py" ]
