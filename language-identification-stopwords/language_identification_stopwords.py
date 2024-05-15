@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
     # Predict languages
     predictions = []
-    for id, text in tqdm(zip(text_validation['id'], targets_validation['lang']), total=len(text_validation)):
+    for id, text in tqdm(zip(text_validation['id'], targets_validation['id']), total=len(text_validation)):
         lang = predict_language(text, stopwords)
         predictions.append({'id': id, 'lang': lang})
 
