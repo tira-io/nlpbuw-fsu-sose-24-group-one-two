@@ -1,5 +1,5 @@
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np
 import spacy
 from scipy.sparse import hstack
@@ -11,7 +11,7 @@ nlp = spacy.load('en_core_web_md')
 class NGramFeatures(BaseEstimator, TransformerMixin):
     def __init__(self, ngram_range=(1, 3)):
         self.ngram_range = ngram_range
-        self.vectorizer = CountVectorizer(ngram_range=self.ngram_range, analyzer='word')
+        self.vectorizer = TfidfVectorizer(ngram_range=self.ngram_range, analyzer='word')
 
     def fit(self, X, y=None):
         texts1 = X['sentence1'].tolist()
