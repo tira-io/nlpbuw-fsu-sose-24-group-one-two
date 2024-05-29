@@ -15,7 +15,6 @@ nlp = spacy.load('en_core_web_md')
 # Download necessary NLTK data
 nltk.download('punkt')
 nltk.download('stopwords')
-nltk.download('wordnet')
 
 # Initialize lemmatizer and stopwords
 lemmatizer = WordNetLemmatizer()
