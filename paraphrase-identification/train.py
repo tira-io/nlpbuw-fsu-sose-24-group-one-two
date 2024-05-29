@@ -1,10 +1,15 @@
+import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.base import TransformerMixin, BaseEstimator
+from sklearn.metrics.pairwise import cosine_similarity
+from scipy.sparse import hstack
 from tira.rest_api_client import Client
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score, matthews_corrcoef
-from joblib import dump, load
+from joblib import dump
 from pathlib import Path
-from custom_transformers import preprocess, TfidfEmbeddingVectorizer, NGramFeatures, SemanticSimilarity
+from custom_transformers import preprocess
+from custom_transformers import NGramFeatures, SemanticSimilarity,TfidfEmbeddingVectorizer
 
 if __name__ == "__main__":
     # Load the data
@@ -13,33 +18,22 @@ if __name__ == "__main__":
     labels = tira.pd.truths("nlpbuw-fsu-sose-24", "paraphrase-identification-train-20240515-training").set_index("id")
     df = text.join(labels)
 
-    # Preprocess the text
+    # Apply preprocessing to the text data
     df['sentence1'] = df['sentence1'].apply(preprocess)
     df['sentence2'] = df['sentence2'].apply(preprocess)
 
-    # Create a pipeline with n-gram features, TF-IDF embeddings, and semantic similarity
+    # Create a pipeline with n-gram features and semantic similarity
     pipeline = Pipeline([
         ('features', FeatureUnion([
             ('ngram', NGramFeatures()),
-            ('tfidf', TfidfEmbeddingVectorizer()),
-            ('semantic', SemanticSimilarity())
+            ('semantic', SemanticSimilarity()),
+            ('tfidf_embedding', TfidfEmbeddingVectorizer())
         ])),
         ('classifier', SVC(kernel='linear', C=1.0))  # Default hyperparameters
     ])
-
+    
     # Fit the model
     pipeline.fit(df[['sentence1', 'sentence2']], df['label'])
 
     # Save the model
     dump(pipeline, Path(__file__).parent / "model.joblib")
-
-    # Load the model
-    loaded_pipeline = load(Path(__file__).parent / "model.joblib")
-
-    # Predict and evaluate
-    y_pred = loaded_pipeline.predict(df[['sentence1', 'sentence2']])
-    accuracy = accuracy_score(df['label'], y_pred)
-    mcc = matthews_corrcoef(df['label'], y_pred)
-
-    print(f"Accuracy: {accuracy}")
-    print(f"MCC: {mcc}")

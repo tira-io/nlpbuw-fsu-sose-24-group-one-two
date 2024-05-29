@@ -8,8 +8,9 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.base import TransformerMixin, BaseEstimator
 from sklearn.metrics.pairwise import cosine_similarity
 from scipy.sparse import hstack
-from transformers import BertTokenizer, BertModel
-import torch
+import spacy
+
+nlp = spacy.load('en_core_web_md')
 
 # Download necessary NLTK data
 nltk.download('punkt')
@@ -66,8 +67,7 @@ class NGramFeatures(BaseEstimator, TransformerMixin):
         ngram_matrix1 = self.vectorizer.transform(texts1)
         ngram_matrix2 = self.vectorizer.transform(texts2)
         return hstack([ngram_matrix1, ngram_matrix2])
-
-# Custom transformer for computing semantic similarity using BERT
+    
 class SemanticSimilarity(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         return self
@@ -76,14 +76,7 @@ class SemanticSimilarity(BaseEstimator, TransformerMixin):
         texts1 = X['sentence1'].tolist()
         texts2 = X['sentence2'].tolist()
         similarities = []
-        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-        bert_model = BertModel.from_pretrained('bert-base-uncased')
         for doc1, doc2 in zip(texts1, texts2):
-            inputs1 = tokenizer(doc1, return_tensors='pt', padding=True, truncation=True, max_length=128)
-            inputs2 = tokenizer(doc2, return_tensors='pt', padding=True, truncation=True, max_length=128)
-            with torch.no_grad():
-                outputs1 = bert_model(**inputs1).last_hidden_state.mean(dim=1)
-                outputs2 = bert_model(**inputs2).last_hidden_state.mean(dim=1)
-            similarity = torch.nn.functional.cosine_similarity(outputs1, outputs2).item()
+            similarity = nlp(doc1).similarity(nlp(doc2))
             similarities.append([similarity])
         return np.array(similarities)
