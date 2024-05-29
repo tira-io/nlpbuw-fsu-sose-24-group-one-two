@@ -3,6 +3,18 @@ from joblib import load
 from tira.rest_api_client import Client
 from tira.third_party_integrations import get_output_directory
 from custom_transformers import preprocess, TfidfEmbeddingVectorizer, NGramFeatures, SemanticSimilarity
+import nltk
+import numpy as np
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
+import string
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.base import TransformerMixin, BaseEstimator
+from sklearn.metrics.pairwise import cosine_similarity
+from scipy.sparse import hstack
+import spacy
 
 if __name__ == "__main__":
     # Load the data
