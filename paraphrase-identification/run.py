@@ -2,11 +2,10 @@ from pathlib import Path
 from joblib import load
 from tira.rest_api_client import Client
 from tira.third_party_integrations import get_output_directory
-from custom_transformers import First_process, TfidfEmbeddingVectorizer, NGramFeatures, SemanticSimilarity
+from custom_transformers import TfidfEmbeddingVectorizer, NGramFeatures, SemanticSimilarity
 import nltk
 import numpy as np
 import nltk
-from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 import string
@@ -17,16 +16,13 @@ from scipy.sparse import hstack
 import spacy
 
 if __name__ == "__main__":
-    nltk.download('punkt')
-    nltk.download('stopwords')
+
     # Load the data
     tira = Client()
     df = tira.pd.inputs(
         "nlpbuw-fsu-sose-24", "paraphrase-identification-validation-20240515-training"
     ).set_index("id")
-    df['sentence1'] = df['sentence1'].apply(First_process)
-    df['sentence2'] = df['sentence2'].apply(First_process)
-
+   
 
     # Predict using the model stored
     model = load(Path(__file__).parent / "model.joblib")

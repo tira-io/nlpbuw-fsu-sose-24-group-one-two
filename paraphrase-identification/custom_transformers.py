@@ -1,6 +1,5 @@
 import numpy as np
 import nltk
-from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer,PorterStemmer
 import string
@@ -13,32 +12,6 @@ from pathlib import Path
 import re
 
 nlp = spacy.load('en_core_web_md')
-
-# Download necessary NLTK data
-lt=WordNetLemmatizer()
-st=PorterStemmer()
-lang_ids = [
-        "en"
-    ]
-stopwords = {
-        lang_id: set(
-            (Path(__file__).parent / "stopwords" / f"stopwords-{lang_id}.txt")
-            .read_text()
-            .splitlines()
-        )
-        - set(("(", ")", "*", "|", "+", "?"))  # remove regex special characters
-        for lang_id in lang_ids
-    }
-# Initialize lemmatizer and stopwords
-def First_process(input_txt):
-        
-        input_txt = re.sub(r'[^a-zA-Z\s]', '', input_txt)
-        input_txt = word_tokenize(input_txt)
-        input_txt = [lt.lemmatize(token) for token in input_txt]
-        input_txt = [st.stem(token) for token in input_txt]
-        input_txt = [word for word in input_txt if word not in stopwords]
-        input_txt = ' '.join(input_txt)
-        return input_txt
 
 class TfidfEmbeddingVectorizer(TransformerMixin, BaseEstimator):
     def __init__(self):
