@@ -8,7 +8,7 @@ from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.svm import SVC
 from joblib import dump
 from pathlib import Path
-from custom_transformers import preprocess
+from custom_transformers import First_process
 from custom_transformers import NGramFeatures, SemanticSimilarity,TfidfEmbeddingVectorizer
 
 if __name__ == "__main__":
@@ -19,8 +19,8 @@ if __name__ == "__main__":
     df = text.join(labels)
 
     # Apply preprocessing to the text data
-    df['sentence1'] = df['sentence1'].apply(preprocess)
-    df['sentence2'] = df['sentence2'].apply(preprocess)
+    df['sentence1'] = df['sentence1'].apply(First_process)
+    df['sentence2'] = df['sentence2'].apply(First_process)
 
     # Create a pipeline with n-gram features and semantic similarity
     pipeline = Pipeline([

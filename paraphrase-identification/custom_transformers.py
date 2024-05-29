@@ -2,36 +2,43 @@ import numpy as np
 import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
-from nltk.stem import WordNetLemmatizer
+from nltk.stem import WordNetLemmatizer,PorterStemmer
 import string
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.base import TransformerMixin, BaseEstimator
 from sklearn.metrics.pairwise import cosine_similarity
 from scipy.sparse import hstack
 import spacy
+from pathlib import Path
+import re
 
 nlp = spacy.load('en_core_web_md')
 
 # Download necessary NLTK data
-nltk.download('punkt')
-nltk.download('stopwords')
-
+lt=WordNetLemmatizer()
+st=PorterStemmer()
+lang_ids = [
+        "en"
+    ]
+stopwords = {
+        lang_id: set(
+            (Path(__file__).parent / "stopwords" / f"stopwords-{lang_id}.txt")
+            .read_text()
+            .splitlines()
+        )
+        - set(("(", ")", "*", "|", "+", "?"))  # remove regex special characters
+        for lang_id in lang_ids
+    }
 # Initialize lemmatizer and stopwords
-lemmatizer = WordNetLemmatizer()
-stop_words = set(stopwords.words('english'))
-punctuation_table = str.maketrans('', '', string.punctuation)
-
-def preprocess(text):
-    # Tokenize
-    words = word_tokenize(text)
-    # Lowercase
-    words = [word.lower() for word in words]
-    # Remove punctuation and stopwords
-    words = [word.translate(punctuation_table) for word in words if word.isalpha()]
-    words = [word for word in words if word not in stop_words]
-    # Lemmatize
-    words = [lemmatizer.lemmatize(word) for word in words]
-    return ' '.join(words)
+def First_process(input_txt):
+        
+        input_txt = re.sub(r'[^a-zA-Z\s]', '', input_txt)
+        input_txt = word_tokenize(input_txt)
+        input_txt = [lt.lemmatize(token) for token in input_txt]
+        input_txt = [st.stem(token) for token in input_txt]
+        input_txt = [word for word in input_txt if word not in stopwords]
+        input_txt = ' '.join(input_txt)
+        return input_txt
 
 class TfidfEmbeddingVectorizer(TransformerMixin, BaseEstimator):
     def __init__(self):
