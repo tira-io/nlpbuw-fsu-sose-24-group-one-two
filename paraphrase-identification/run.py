@@ -2,7 +2,7 @@ from pathlib import Path
 from joblib import load
 from tira.rest_api_client import Client
 from tira.third_party_integrations import get_output_directory
-from custom_transformers import NGramFeatures, SemanticSimilarity
+from custom_transformers import preprocess, TfidfEmbeddingVectorizer, NGramFeatures, SemanticSimilarity
 
 if __name__ == "__main__":
     # Load the data
@@ -10,6 +10,9 @@ if __name__ == "__main__":
     df = tira.pd.inputs(
         "nlpbuw-fsu-sose-24", "paraphrase-identification-validation-20240515-training"
     ).set_index("id")
+    df['sentence1'] = df['sentence1'].apply(preprocess)
+    df['sentence2'] = df['sentence2'].apply(preprocess)
+
 
     # Predict using the model stored
     model = load(Path(__file__).parent / "model.joblib")
