@@ -17,6 +17,9 @@ from scipy.sparse import hstack
 import spacy
 
 if __name__ == "__main__":
+    nltk.download('punkt')
+    nltk.download('stopwords')
+    nltk.download('wordnet')
     # Load the data
     tira = Client()
     df = tira.pd.inputs(
