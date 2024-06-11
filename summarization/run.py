@@ -17,14 +17,14 @@ def preprocess_text(text):
     # text = text.translate(str.maketrans('', '', string.punctuation))
     
     # Tokenize text into words
-    words = word_tokenize(text)
+    # words = word_tokenize(text)
     
     # Remove stop words
-    stop_words = set(stopwords.words('english'))
-    filtered_words = [word for word in words if word not in stop_words]
+    # stop_words = set(stopwords.words('english'))
+    # filtered_words = [word for word in words if word not in stop_words]
     
     # Join filtered words back into text
-    processed_text = " ".join(filtered_words)
+    processed_text = text
     
     return processed_text
 
