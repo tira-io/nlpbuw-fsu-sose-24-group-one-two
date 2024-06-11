@@ -28,7 +28,7 @@ def preprocess_text(text):
     
     return processed_text
 
-def extractive_summarization(text, num_sentences=4):
+def extractive_summarization(text, num_sentences=2):
     # Preprocess the text
     processed_text = preprocess_text(text)
     
