@@ -14,17 +14,17 @@ def preprocess_text(text):
     text = text.lower()
     
     # Remove punctuation
-    # text = text.translate(str.maketrans('', '', string.punctuation))
+    text = text.translate(str.maketrans('', '', string.punctuation))
     
     # Tokenize text into words
-    # words = word_tokenize(text)
+    words = word_tokenize(text)
     
     # Remove stop words
-    # stop_words = set(stopwords.words('english'))
-    # filtered_words = [word for word in words if word not in stop_words]
+    stop_words = set(stopwords.words('english'))
+    filtered_words = [word for word in words if word not in stop_words]
     
     # Join filtered words back into text
-    processed_text = text
+    processed_text = " ".join(filtered_words)
     
     return processed_text
 
@@ -40,14 +40,17 @@ def extractive_summarization(text, num_sentences=2):
     sentences = sent_tokenize(processed_text)
     
     # Calculate TF-IDF scores for each sentence
-    vectorizer = TfidfVectorizer()
+    vectorizer = TfidfVectorizer(max_df=1.0, min_df=0.1, ngram_range=(1, 2))
     tfidf_matrix = vectorizer.fit_transform(sentences)
     
     # Sum the TF-IDF scores for each sentence
-    sentence_scores = tfidf_matrix.sum(axis=1).flatten().tolist()[0]
+    sentence_scores = tfidf_matrix.sum(axis=1).flatten().tolist()
     
     # Rank sentences based on their scores
     ranked_sentences = [sentence for sentence, score in sorted(zip(sentences, sentence_scores), key=lambda x: x[1], reverse=True)]
+    
+    # Adjust the number of sentences for the summary dynamically
+    num_sentences = min(num_sentences, len(ranked_sentences))
     
     # Select the top-ranked sentences for the summary
     summary = " ".join(ranked_sentences[:num_sentences])
@@ -60,15 +63,14 @@ if __name__ == "__main__":
     df = tira.pd.inputs(
         "nlpbuw-fsu-sose-24", "summarization-validation-20240530-training"
     ).set_index("id")
-    print("df size is : ",df.size)
-    # Select only the first 30 records
-    # df = df.head(30)
-    # print(df)
-    # Apply extractive summarization with text preprocessing to the first 30 records
+    print("df size is : ", df.size)
+    
+    # Apply extractive summarization with text preprocessing to the records
     df["summary"] = df["story"].apply(lambda x: extractive_summarization(x, num_sentences=2))
     df = df.drop(columns=["story"]).reset_index()
     print(df)
-    # Save the summarized predictions for the first 30 records
+    
+    # Save the summarized predictions
     output_directory = get_output_directory(str(Path(__file__).parent))
     df.to_json(
         Path(output_directory) / "predictions.jsonl", orient="records", lines=True
