@@ -8,13 +8,10 @@ import nltk
 import networkx as nx
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
-from nltk import pos_tag, ne_chunk
 import string
 
 nltk.download('punkt')
 nltk.download('stopwords')
-nltk.download('maxent_ne_chunker')
-nltk.download('words')
 
 def preprocess_text(text):
     # Convert text to lowercase
@@ -51,8 +48,8 @@ def extractive_summarization(text, num_sentences=3):
     if len(sentences) <= num_sentences:
         return " ".join(sentences), list(range(len(sentences)))
     
-    # Calculate TF-IDF scores for words
-    vectorizer = TfidfVectorizer(stop_words='english')
+    # Calculate TF-IDF scores for words with n-grams (1,2)
+    vectorizer = TfidfVectorizer(stop_words='english', ngram_range=(1, 2))
     tfidf_matrix = vectorizer.fit_transform(processed_sentences)
     
     # Calculate cosine similarity matrix for sentences
