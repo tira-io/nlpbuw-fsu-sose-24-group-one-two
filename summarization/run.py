@@ -85,7 +85,7 @@ if __name__ == "__main__":
     print("df size is : ", df.size)
     
     # Apply extractive summarization with text preprocessing to the records
-    df["summary"], df["sentence_indices"] = zip(*df["story"].apply(lambda x: extractive_summarization(x, num_sentences=2)))
+    df["summary"], df["sentence_indices"] = zip(*df["story"].apply(lambda x: extractive_summarization(x, num_sentences=3)))
     df = df.drop(columns=["story"]).reset_index()
     print(df)
     
