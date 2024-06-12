@@ -15,7 +15,7 @@ def preprocess_text(text):
     text = text.lower()
     
     # Remove punctuation
-    text = text.translate(str.maketrans('', '', string.punctuation))
+   
     
     # Tokenize text into words
     words = word_tokenize(text)
