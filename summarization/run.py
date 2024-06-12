@@ -32,21 +32,23 @@ def preprocess_text(text):
     
     return processed_text
 
-def extractive_summarization(text, num_sentences=3):
+def extractive_summarization(text, num_sentences=6):
     # Preprocess the text
     processed_text = preprocess_text(text)
     
-    # Check if the preprocessed text is empty
-    if not processed_text:
-        return "", []
+    # Tokenize the original text into sentences 
+    sentences = sent_tokenize(text)
     
-    # Tokenize the preprocessed text into sentences
-    sentences = sent_tokenize(text)  # Use original text to preserve sentences
-    processed_sentences = sent_tokenize(processed_text)
-    
-    # Ensure there are enough sentences to summarize
+    # Check if there are enough sentences to summarize
     if len(sentences) <= num_sentences:
         return " ".join(sentences), list(range(len(sentences)))
+    
+    # Tokenize the preprocessed text into sentences
+    processed_sentences = sent_tokenize(processed_text)
+    
+    # Ensure the tokenized processed sentences correspond to the original sentences
+    if len(processed_sentences) != len(sentences):
+        return " ".join(sentences[:num_sentences]), list(range(num_sentences))
     
     # Calculate TF-IDF scores for words with n-grams (1,2)
     vectorizer = TfidfVectorizer(stop_words='english', ngram_range=(1, 2))
@@ -57,17 +59,17 @@ def extractive_summarization(text, num_sentences=3):
     
     # Rank sentences using PageRank algorithm
     nx_graph = nx.from_numpy_array(sim_matrix)
-    scores = nx.pagerank(nx_graph)
+    scores = nx.pagerank_numpy(nx_graph)
     
     # Rank sentences based on their PageRank scores
     ranked_sentences_with_indices = sorted(
-        ((scores[i], i, sentence) for i, sentence in enumerate(sentences) if i in scores), 
+        ((scores[i], i) for i in range(len(sentences))),
         key=lambda x: x[0], reverse=True)
     
     # Select the top-ranked sentences for the summary
-    top_sentence_indices = sorted([i for score, i, sentence in ranked_sentences_with_indices[:num_sentences]])
+    top_sentence_indices = sorted([i for _, i in ranked_sentences_with_indices[:num_sentences]])
     top_sentences = [sentences[i] for i in top_sentence_indices]
-    summary = " ".join(top_sentences)
+    summary = "\n".join(top_sentences)  # Ensuring each sentence is in a new line
     
     return summary, top_sentence_indices
 
@@ -79,7 +81,7 @@ if __name__ == "__main__":
     
     # Apply extractive summarization with text preprocessing to the records
     df["summary"], df["sentence_indices"] = zip(*df["story"].apply(lambda x: extractive_summarization(x, num_sentences=3)))
-    df = df.drop(columns=["story"]).reset_index()
+    df = df.drop(columns=["story","sentence_indices"]).reset_index()
     
     # Save the summarized predictions
     output_directory = get_output_directory(str(Path(__file__).parent))
