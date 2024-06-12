@@ -5,7 +5,9 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import nltk
+import networkx as nx
 nltk.download('punkt')
+nltk.download('stopwords')
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
 import string
@@ -14,15 +16,10 @@ def preprocess_text(text):
     # Convert text to lowercase
     text = text.lower()
     
-    # Remove punctuation
-   
-    
-    # Tokenize text into words
+    # Tokenize text into words and remove stop words and punctuation
     words = word_tokenize(text)
-    
-    # Remove stop words
     stop_words = set(stopwords.words('english'))
-    filtered_words = [word for word in words if word not in stop_words]
+    filtered_words = [word for word in words if word not in stop_words and word not in string.punctuation]
     
     # Join filtered words back into text
     processed_text = " ".join(filtered_words)
@@ -35,59 +32,67 @@ def extractive_summarization(text, num_sentences=2):
     
     # Check if the preprocessed text is empty
     if not processed_text:
-        return ""
+        return "", []
     
     # Tokenize the preprocessed text into sentences
-    sentences = sent_tokenize(processed_text)
+    sentences = sent_tokenize(text)  # Use original text to preserve sentences
+    processed_sentences = sent_tokenize(processed_text)
     
     # Ensure there are enough sentences to summarize
     if len(sentences) <= num_sentences:
-        return " ".join(sentences)
-    
-    # Tokenize sentences into words
-    words_in_sentences = [word_tokenize(sentence) for sentence in sentences]
+        return " ".join(sentences), list(range(len(sentences)))
     
     # Calculate TF-IDF scores for words
-    vectorizer = TfidfVectorizer(ngram_range=(1, 2))
-    tfidf_matrix = vectorizer.fit_transform(sentences)
-    feature_names = vectorizer.get_feature_names_out()
+    vectorizer = TfidfVectorizer()
+    tfidf_matrix = vectorizer.fit_transform(processed_sentences)
     
-    # Calculate word scores
-    word_scores = {}
-    for col in tfidf_matrix.nonzero()[1]:
-        word = feature_names[col]
-        score = tfidf_matrix[0, col]
-        word_scores[word] = score
+    # Debug: Print TF-IDF matrix shape and feature names
+    print(f"TF-IDF Matrix Shape: {tfidf_matrix.shape}")
+    print(f"Feature Names: {vectorizer.get_feature_names_out()}")
     
-    # Score sentences based on word scores
-    sentence_scores = []
-    for sentence in words_in_sentences:
-        sentence_score = sum(word_scores.get(word, 0) for word in sentence)
-        sentence_scores.append(sentence_score)
+    # Calculate cosine similarity matrix for sentences
+    sim_matrix = cosine_similarity(tfidf_matrix)
     
-    # Rank sentences based on their scores
-    ranked_sentences = [sentence for sentence, score in sorted(zip(sentences, sentence_scores), key=lambda x: x[1], reverse=True)]
+    # Debug: Print cosine similarity matrix
+    print(f"Cosine Similarity Matrix: {sim_matrix}")
+    
+    # Rank sentences using PageRank algorithm
+    nx_graph = nx.from_numpy_array(sim_matrix)
+    scores = nx.pagerank(nx_graph)
+    
+    # Debug: Print PageRank scores
+    print(f"PageRank Scores: {scores}")
+    
+    # Rank sentences based on their PageRank scores
+    ranked_sentences_with_indices = sorted(
+        ((scores[i], i, sentence) for i, sentence in enumerate(sentences) if i in scores), 
+        key=lambda x: x[0], reverse=True)
+    
+    # Debug: Print ranked sentences and their indices
+    print(f"Ranked Sentences with Indices: {ranked_sentences_with_indices}")
     
     # Select the top-ranked sentences for the summary
-    summary = " ".join(ranked_sentences[:num_sentences])
+    top_sentence_indices = [i for score, i, sentence in ranked_sentences_with_indices[:num_sentences]]
+    top_sentences = [sentence for score, i, sentence in ranked_sentences_with_indices[:num_sentences]]
+    summary = " ".join(top_sentences)
     
-    return summary
+    return summary, top_sentence_indices
 
 if __name__ == "__main__":
     # Load the data
     tira = Client()
-    df = tira.pd.inputs(
-        "nlpbuw-fsu-sose-24", "summarization-validation-20240530-training"
-    ).set_index("id")
+    df = tira.pd.inputs("nlpbuw-fsu-sose-24", "summarization-validation-20240530-training").set_index("id")
     print("df size is : ", df.size)
     
     # Apply extractive summarization with text preprocessing to the records
-    df["summary"] = df["story"].apply(lambda x: extractive_summarization(x, num_sentences=2))
+    df["summary"], df["sentence_indices"] = zip(*df["story"].apply(lambda x: extractive_summarization(x, num_sentences=2)))
     df = df.drop(columns=["story"]).reset_index()
     print(df)
     
     # Save the summarized predictions
     output_directory = get_output_directory(str(Path(__file__).parent))
-    df.to_json(
-        Path(output_directory) / "predictions.jsonl", orient="records", lines=True
-    )
+    df.to_json(Path(output_directory) / "predictions.jsonl", orient="records", lines=True)
+
+    # Print the sentence indices considered for the summary
+    for i, row in df.iterrows():
+        print(f"ID: {row['id']}, Summary: {row['summary']}, Sentence Indices: {row['sentence_indices']}")
