@@ -2,13 +2,20 @@ from pathlib import Path
 from tira.rest_api_client import Client
 from tira.third_party_integrations import get_output_directory
 import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import nltk
-nltk.download('punkt')
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
 import string
+from transformers import BertTokenizer, BertModel
+import torch
+
+nltk.download('punkt')
+nltk.download('stopwords')
+
+# Initialize BERT model and tokenizer
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+model = BertModel.from_pretrained('bert-base-uncased')
 
 def preprocess_text(text):
     # Convert text to lowercase
@@ -29,6 +36,19 @@ def preprocess_text(text):
     
     return processed_text
 
+def get_sentence_embeddings(sentences):
+    # Encode sentences
+    inputs = tokenizer(sentences, return_tensors='pt', padding=True, truncation=True)
+    
+    # Get BERT embeddings
+    with torch.no_grad():
+        outputs = model(**inputs)
+    
+    # Use the embeddings from the last hidden layer
+    embeddings = outputs.last_hidden_state.mean(dim=1)
+    
+    return embeddings
+
 def extractive_summarization(text, num_sentences=2):
     # Preprocess the text
     processed_text = preprocess_text(text)
@@ -44,20 +64,17 @@ def extractive_summarization(text, num_sentences=2):
     if len(sentences) <= num_sentences:
         return " ".join(sentences)
     
-    # Calculate TF-IDF scores for the document and each sentence
-    vectorizer = TfidfVectorizer(ngram_range=(1, 2))  # Consider both unigrams and bigrams
-    tfidf_matrix = vectorizer.fit_transform(sentences + [processed_text])
+    # Get embeddings for each sentence
+    sentence_embeddings = get_sentence_embeddings(sentences)
+    
+    # Get embeddings for the entire document
+    document_embedding = get_sentence_embeddings([processed_text])
     
     # Calculate cosine similarity between each sentence and the document
-    doc_vector = tfidf_matrix[-1]  # The document vector
-    sentence_vectors = tfidf_matrix[:-1]  # The sentence vectors
-    similarities = cosine_similarity(sentence_vectors, doc_vector)
+    similarities = cosine_similarity(sentence_embeddings, document_embedding).flatten()
     
-    # Calculate sentence scores combining TF-IDF and cosine similarity
-    sentence_scores = similarities.flatten() + tfidf_matrix.sum(axis=1).flatten()[:-1].tolist()
-    
-    # Rank sentences based on their scores
-    ranked_sentences = [sentence for sentence, score in sorted(zip(sentences, sentence_scores), key=lambda x: x[1], reverse=True)]
+    # Rank sentences based on their similarity scores
+    ranked_sentences = [sentence for sentence, similarity in sorted(zip(sentences, similarities), key=lambda x: x[1], reverse=True)]
     
     # Select the top-ranked sentences for the summary
     summary = " ".join(ranked_sentences[:num_sentences])
@@ -72,7 +89,7 @@ if __name__ == "__main__":
     ).set_index("id")
     print("df size is : ", df.size)
     
-    # Apply extractive summarization with text preprocessing to the records
+    # Apply extractive summarization with BERT embeddings to the records
     df["summary"] = df["story"].apply(lambda x: extractive_summarization(x, num_sentences=2))
     df = df.drop(columns=["story"]).reset_index()
     print(df)
