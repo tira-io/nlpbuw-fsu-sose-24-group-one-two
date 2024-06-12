@@ -45,7 +45,7 @@ def extractive_summarization(text, num_sentences=2):
         return " ".join(sentences)
     
     # Calculate TF-IDF scores for the document and each sentence
-    vectorizer = TfidfVectorizer()
+    vectorizer = TfidfVectorizer(ngram_range=(1, 2))  # Consider both unigrams and bigrams
     tfidf_matrix = vectorizer.fit_transform(sentences + [processed_text])
     
     # Calculate cosine similarity between each sentence and the document
@@ -53,8 +53,11 @@ def extractive_summarization(text, num_sentences=2):
     sentence_vectors = tfidf_matrix[:-1]  # The sentence vectors
     similarities = cosine_similarity(sentence_vectors, doc_vector)
     
-    # Rank sentences based on their similarity scores
-    ranked_sentences = [sentence for sentence, similarity in sorted(zip(sentences, similarities), key=lambda x: x[1], reverse=True)]
+    # Calculate sentence scores combining TF-IDF and cosine similarity
+    sentence_scores = similarities.flatten() + tfidf_matrix.sum(axis=1).flatten()[:-1].tolist()
+    
+    # Rank sentences based on their scores
+    ranked_sentences = [sentence for sentence, score in sorted(zip(sentences, sentence_scores), key=lambda x: x[1], reverse=True)]
     
     # Select the top-ranked sentences for the summary
     summary = " ".join(ranked_sentences[:num_sentences])
