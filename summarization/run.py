@@ -69,7 +69,18 @@ def extractive_summarization(text, num_sentences=6):
     # Select the top-ranked sentences for the summary
     top_sentence_indices = sorted([i for _, i in ranked_sentences_with_indices[:num_sentences]])
     top_sentences = [sentences[i] for i in top_sentence_indices]
-    summary = "\n".join(top_sentences)  # Ensuring each sentence is in a new line
+    
+    # Ensure we have exactly 4 sentences to combine into 2
+    if len(top_sentences) < 4:
+        top_sentences.extend(sentences[len(top_sentences):4])  # Get more sentences if less than 4
+    
+    # Combine sentences into 2 sentences
+    if len(top_sentences) >= 4:
+        combined_sentences = [top_sentences[0] + " " + top_sentences[1], top_sentences[2] + " " + top_sentences[3]]
+    else:
+        combined_sentences = [" ".join(top_sentences)]  # In case there are less than 4 sentences
+
+    summary = "\n".join(combined_sentences)  # Ensuring each combined sentence is in a new line
     
     return summary, top_sentence_indices
 
@@ -80,7 +91,7 @@ if __name__ == "__main__":
     print("df size is : ", df.size)
     
     # Apply extractive summarization with text preprocessing to the records
-    df["summary"], df["sentence_indices"] = zip(*df["story"].apply(lambda x: extractive_summarization(x, num_sentences=3)))
+    df["summary"], df["sentence_indices"] = zip(*df["story"].apply(lambda x: extractive_summarization(x, num_sentences=4)))
     df = df.drop(columns=["story","sentence_indices"]).reset_index()
     
     # Save the summarized predictions
