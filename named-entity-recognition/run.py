@@ -13,7 +13,8 @@ if __name__ == "__main__":
     targets_validation = tira.pd.truths(
         "nlpbuw-fsu-sose-24", "ner-validation-20240612-training"
     )
-
+    print(text_validation)
+    print(targets_validation)
     # labeling the data
     predictions = text_validation.copy()
     predictions['tags'] = predictions['sentence'].apply(lambda x: ['B-geo']*len(x.split(' ')))
