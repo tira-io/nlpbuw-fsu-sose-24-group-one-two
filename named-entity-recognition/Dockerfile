@@ -1,8 +1,14 @@
 # docker build -t fschlatt/authorship-verification-trivial:0.0.1 .
 FROM fschlatt/natural-language-processing-exercises:0.0.1
 
+# Install required libraries
 RUN apt-get update && apt-get install -y wget unzip
-RUN wget -O local_model.zip 'https://drive.google.com/file/d/1r_6-idFqe-9k8kEfwUEFDtmGsXv-e9xA/view?usp=sharing' && unzip local_model.zip -d /code/local_model && rm local_model.zip
+
+# Install gdown to download files from Google Drive
+RUN pip install gdown
+
+# Download the model from Google Drive
+RUN gdown --id 1r_6-idFqe-9k8kEfwUEFDtmGsXv-e9xA -O local_model.zip && unzip local_model.zip -d /code/local_model && rm local_model.zip
 
 
 RUN pip install transformers torch pandas os
