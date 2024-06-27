@@ -48,10 +48,12 @@ if __name__ == "__main__":
     text_validation = text_validation
     targets_validation = targets_validation
 
-    # Load pre-trained model and tokenizer
-    model_name = "dbmdz/bert-large-cased-finetuned-conll03-english"
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForTokenClassification.from_pretrained(model_name)
+    # Construct the local path to the model directory
+    model_dir = str(Path(__file__).parent / "local_model")
+    
+    # Load pre-trained model and tokenizer from local directory
+    tokenizer = AutoTokenizer.from_pretrained(model_dir)
+    model = AutoModelForTokenClassification.from_pretrained(model_dir)
 
     # Prepare predictions
     sentences = text_validation['sentence'].tolist()
