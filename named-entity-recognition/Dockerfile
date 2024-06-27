@@ -11,7 +11,7 @@ RUN pip install gdown
 RUN gdown --id 1r_6-idFqe-9k8kEfwUEFDtmGsXv-e9xA -O local_model.zip && unzip local_model.zip -d /code/ && rm local_model.zip
 
 
-RUN pip install transformers torch pandas os
+RUN pip install transformers torch pandas
 
 ADD run.py /code/run.py
 
